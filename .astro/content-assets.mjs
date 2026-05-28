@@ -1,4 +1,8 @@
 
 import __ASTRO_IMAGE_IMPORT_2uhPbu from "./spongebob.webp?astroContentImageFlag=&importer=src%2Fcontent%2Fblog%2F05-markdown-syntax%2Findex.md";
-export default new Map([["./spongebob.webp?astroContentImageFlag=&importer=src%2Fcontent%2Fblog%2F05-markdown-syntax%2Findex.md", __ASTRO_IMAGE_IMPORT_2uhPbu]]);
+import __ASTRO_IMAGE_IMPORT_Z2a0dGA from "./images/RD_SetPass.jpg?astroContentImageFlag=&importer=src%2Fcontent%2Fprojects%2FRustDesk-Setup%2FRustDesk.md";
+import __ASTRO_IMAGE_IMPORT_Z1yDuAg from "./images/RD_Security.jpg?astroContentImageFlag=&importer=src%2Fcontent%2Fprojects%2FRustDesk-Setup%2FRustDesk.md";
+import __ASTRO_IMAGE_IMPORT_2mHzlf from "./images/RD_AddServer.jpg?astroContentImageFlag=&importer=src%2Fcontent%2Fprojects%2FRustDesk-Setup%2FRustDesk.md";
+import __ASTRO_IMAGE_IMPORT_Z1wOmpJ from "./images/RD_Ready.jpg?astroContentImageFlag=&importer=src%2Fcontent%2Fprojects%2FRustDesk-Setup%2FRustDesk.md";
+export default new Map([["./spongebob.webp?astroContentImageFlag=&importer=src%2Fcontent%2Fblog%2F05-markdown-syntax%2Findex.md", __ASTRO_IMAGE_IMPORT_2uhPbu], ["./images/RD_SetPass.jpg?astroContentImageFlag=&importer=src%2Fcontent%2Fprojects%2FRustDesk-Setup%2FRustDesk.md", __ASTRO_IMAGE_IMPORT_Z2a0dGA], ["./images/RD_Security.jpg?astroContentImageFlag=&importer=src%2Fcontent%2Fprojects%2FRustDesk-Setup%2FRustDesk.md", __ASTRO_IMAGE_IMPORT_Z1yDuAg], ["./images/RD_AddServer.jpg?astroContentImageFlag=&importer=src%2Fcontent%2Fprojects%2FRustDesk-Setup%2FRustDesk.md", __ASTRO_IMAGE_IMPORT_2mHzlf], ["./images/RD_Ready.jpg?astroContentImageFlag=&importer=src%2Fcontent%2Fprojects%2FRustDesk-Setup%2FRustDesk.md", __ASTRO_IMAGE_IMPORT_Z1wOmpJ]]);
 		
