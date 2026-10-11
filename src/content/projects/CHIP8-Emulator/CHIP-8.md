@@ -96,7 +96,7 @@ Opcode symbols:
 ## Header file (chip8.h)
 ### Memory
 An array of size 4096 of 8 bits 
-```C
+```c
 uint8_t memory[4096];
 ```
 #### Memory Map:
@@ -106,26 +106,26 @@ uint8_t memory[4096];
 
 ### Registers
 array of size 16 of 8-bits for V0 -> VF
-```C
+```c
 uint8_t v[16];
 ```
 
 Address register **I** 12-bits (2 bytes) & Program counter of size 12-bits  (Program counter has memory address from 0 -> 4095 that's 12 bits, however we are using 16 bits value as it is simpler to represent and work with)
-```C
+```c
 uint16_t I;
 uint16_t pc;
 ```
 
 ### Stack
 Stack stores return addresses, and return addresses are memory address, so the stack stores 16 levels of addresses each address is 12-bits, we are using 16 for the same reason as Registers
-```C
+```c
 uint16_t stack[16];
 uint8_t sp; // stack pointer
 ```
 
 ### Timer
 For the timer we are using 8-bit unsigned int 
-```C
+```c
 uint8_t delay_timer;
 uint8_t sound_timer;
 ```
@@ -145,13 +145,13 @@ Keypad                   Keyboard
 +-+-+-+-+                +-+-+-+-+
 ```
 
-```C
+```c
 uint8_t key[16];
 ```
 
 ### Graphics
 and for the Graphics the size of the screen is 64x32, as for each pixel is 1-byte 
-```C
+```c
 uint8_t grphx[64 * 32];
 ```
 
@@ -189,7 +189,7 @@ Hex    Bin          Sprite
 and so on...
 
 Since each font sprite is 5 8-bit and there are 16 characters in the font then the an 8-bit array with size of 80 will store the whole font
-```C
+```c
 uint8_t chip8_fontset[80];
 ```
 
@@ -197,18 +197,18 @@ uint8_t chip8_fontset[80];
 Basically to load a game means that we first need to initialize the CHIP and then  get a binary game file copy it to a buffer check if the size is bigger that the maximum ROM size or not then copy and past bytes to the CHIP8's  memory array.
 
 To check the size of the file we first `fopen` save it into a `FILE` pointer then check if the file is `NULL` or not. after that we can then use the following
-```C
+```c
 fseek(pGameFile, 0, SEEK_END);
 size_t fileSize = ftell(pGameFile);
 ```
 `fseek` will make the FILE variable point to the end of the file, then using `ftell` return the file size in bytes.
 
 For the buffer I allocated memory equal to the size of the file we just got.
-```C
+```c
 uint8_t *pBuff = (uint8_t *)malloc(sizeof(uint8_t) * fileSize);
 ```
 Then I read the game binary file and wrote it to the buffer using:
-```C
+```c
 if (fread(pBuff, 1, fSize, pGameFile) != fSize)
 {
 	perror("Error reading Game File");
@@ -219,7 +219,7 @@ if (fread(pBuff, 1, fSize, pGameFile) != fSize)
 }
 ```
 After that I copied the buffer to the CHIP memory, keep in mind that the memory starts from *512* as the first 512 bytes are reserved.
-```C
+```c
 for (int i = 0; i < fSize; i++)
 {
 	memory[MEM_START_ADDR + i] = pBuff[i];
@@ -233,7 +233,7 @@ Here I followed the [Wikipedia's](https://en.wikipedia.org/wiki/CHIP-8#Graphics_
 
 #### Fetching Opcode
 First thing first as memory is 8-bit size and the opcode is 16-bits long, we need to get memory at position "`pc`" shift it to the right by 8 and then use bitwise OR with the next memory position "`pc + 1`"
-```C
+```c
 	opcode = memory[pc] << 8 | memory[pc + 1];
 //	opcode = 0x00AB     << 8 | 0x00CD
 //	opcode = 0xAB00          | 0x00CD
@@ -248,7 +248,7 @@ Eg., {`0NNN`, `00E0`, `00EE`} all begin with `0x0`, meaning they belong to the s
 Also. some families contain multiple instructions that share the same highest nibble. In these cases, a second `switch` statement can be used to examine additional bits of the opcode and determine the exact instruction. This creates a hierarchical decoding process: first identify the instruction family, then identify the specific instruction within that family.
 
 Eg:
-```C
+```c
 switch (opcode & 0xF000)
 {
     case 0x0000:
@@ -274,7 +274,7 @@ switch (opcode & 0xF000)
 
 #### 0x00E0
 Opcode to clear the screen, basically you will iterate over the (64 * 32) grphx array and set it to 0, then go to the next instruction by adding 2 to `pc` 
-```C
+```c
 for (int i = 0; i < (SCREEN_WIDTH * SCREEN_HIGHT); i++)
 	{
 	grphx[i] = 0;
@@ -285,7 +285,7 @@ pc += 2;
 
 #### 0x00EE
 Returns from a subroutine to address pulled from stack, this means that you will need to get the last subroutine address in the stack and store it in the program counter, so first you need to decrement the stack pointer `sp` by one then assign the `pc = stack[sp]`
-```C
+```c
 case 0x00ee:
 	sp -= 1;
 	pc = stack[sp];
@@ -296,7 +296,7 @@ case 0x00ee:
 
 #### 0x1NNN
 Jump to address NNN, so we need to set the program counter to address NNN. To get the NNN address I masked the used opcode with `0x0fff`, eg. assuming that `opcode = 0x1ABC`, by masking it with `0x0fff` you get `pc = 0x0ABC`  
-```C
+```c
 case 0x1NNN
 	pc = opcode & 0x0fff;
 	break
@@ -307,7 +307,7 @@ Push return address onto stack and call subroutine at address NNN. its the same 
 
 #### 0x3XNN
 Skips next instruction if Vx equals to NN. So we need to first get `X` and `NN`,  then compare if Vx is equals to NN then increment `pc` by 4 to skip the next instruction, else `pc += 2`
-```C
+```c
 case 0x3NNN: // 0x3XNN Skips next instruction if Vx equals to NN
 {
 	uint8_t X = (opcode & 0x0f00) >> 8; // 0x3ABC & 0x0f00 = 0x0A00; Needs to be shifted 8 bits to the right
@@ -322,7 +322,7 @@ case 0x3NNN: // 0x3XNN Skips next instruction if Vx equals to NN
 }
 ```
 For **0x4XNN, 0x5XY0, 0x9XY0** its implemented the same way, to extract `Y` its exactly the same as `X` but you will mask it with `0x00f0` then shift it by 4 instead
-```C
+```c
 uint8_t Y = (opcode & 0x00f0) >> 4;
 ```
 
@@ -330,7 +330,7 @@ uint8_t Y = (opcode & 0x00f0) >> 4;
 
 #### 0x6XNN
 Sets Vx to NN, fairly simple you just get the Vx and NN then set Vx to NN
-```C
+```c
 case 0x6XNN
 	v[X] = NN;
 	break;
@@ -339,7 +339,7 @@ For **0x7XNN, 0x8XY0, 0x8XY1, 0x8XY2, 0x8XY3** all implemented exactly the same 
 
 #### 0x8XY4
 Adds Vy to Vx, if there is an overflow then set Vf to 1 else set it to 0. 
-```C
+```c
 Case 0x8XY4
 	uint16_t sum = v[X] + v[Y];
 	if (sum > 0xff)
@@ -370,7 +370,7 @@ eg.
 ```
 #### 0xANNN
 Sets I to the address of NNN. 
-```C
+```c
 case 0xANNN:
 	uint16_t NNN = opcode & 0x0fff;
 	I = NNN;
@@ -381,7 +381,7 @@ For **0xBNNN** its basically the same you just need to add V0 to the NNN
 
 #### 0xCXNN
 Sets Vx to result of bitwise and operation on a random number from 0 -> 254.
-```C
+```c
 case 0xCXNN:
 	uint16_t randNo = rand() & 255
 	v[X] = randNo & NN;
@@ -394,7 +394,7 @@ case 0xCXNN:
 Draws a sprite at (Vx, Vy) with data starting at address I, I is not changed, and the size of the sprite it 8xN. Vf is set to 1 if any screen pixel are fliped from 1 to 0, and set to 0 otherwise, this way the you can detect collision.
 
 So to draw the sprite we first need to set Vf to 0 then we will need two for loops the first on is for yAxis and the otherone is the xAxis, in the yAxis loop we need to get the pixel value that will be drawn, and going to the xAxis loop, I first set a limit to the screen x and y to 64 and 32 respectively, the get the location of the pixel and check if the `grphx[pixelLocation]` is 1 that means that the pixel wil get flipped from 1 to 0 then set Vf to 1, and at last xor the  `grphx[pixelLocation]` by 1.
-```C
+```c
 case 0xDXYN:
 	v[0xf] = 0;
 	for (uint8_t yAxis = 0; yAxis < hight; yAxis++)
@@ -428,7 +428,7 @@ case 0xDXYN:
 
 #### 0xEX9E
 Skips next instruction if the key stored in Vx is pressed.
-```C
+```c
 case 0xEX8E:
 	if (key[v[X]])
 	{
@@ -443,13 +443,13 @@ For `0xEX8E` its pretty much the same, you just to reverse the logic.
 
 #### 0xFX07
 Sets Vx to value of delay timer.
-```C
+```c
 case 0xFX07:
 	v[X] = delay_timer;
 ```
 #### 0xFX0A
 Await key press and stores it in Vx, All instructions are halted until next key event. So first we need to loop over the 16 keys check if the `key[i]` is pressed or not if so set Vx to `i` and go to the next instruction, else return to try again 
-```C
+```c
 case 0xFX0A:
 	bool isPressed = false;
 	
@@ -469,7 +469,7 @@ case 0xFX0A:
 
 #### 0xFX15
 Sets the delay timer to Vx.
-```C
+```c
 case 0xFX15:
 	delay_timer = v[X];
 	break;
@@ -480,7 +480,7 @@ For `0xFX18`, its the same u just need to set the `sound_timer` to Vx
 Adds Vx to I. 
 
 ***Note:** Most CHIP-8 interpreters' FX1E instructions do not affect VF, with one exception: the CHIP-8 interpreter for the Commodore Amiga sets VF to 1 when there is a range overflow (I+VX>0xFFF), and to 0 when there is not. The only known game that depends on this behavior is Spacefight 2091!, while at least one game, Animal Race, depends on VF not being affected.*
-```C
+```c
 case 0xFX1E:
 	uint16_t sum = I + v[X];
 	if (sumn > 0xfff) // Check if the sum is bigger that 12-bits 
@@ -499,7 +499,7 @@ case 0xFX1E:
 
 #### 0xFX29
 Sets the index register `I` to the location of the sprite corresponding to the hexadecimal digit stored in `Vx`.. This means that we will start the first address of the character sprite in I, and as we stored the font characters at memory location 0. this means that for character 0 it will take the address from 0 to 4, as it is 5 pixels high (font is 4x5). and for say character 5 it will be starting at memory location `5 * 5 = 25` so the implementation for this opcode is as follows:
-```C
+```c
 case 0xFX29:
 	I = v[X] * 0x5;
 	px += 2;
@@ -516,7 +516,7 @@ I + 1 = 2 -> 0000 0010
 I + 2 = 3 -> 0000 0011
 ```
 
-```C
+```c
 case 0xFX33:
 	memory[i] = (v[X] % 1000) / 100;
 	memory[i + 1] = (v[X] % 100) / 10;
@@ -528,7 +528,7 @@ case 0xFX33:
 
 #### 0xFX55
 Sotred from V0 to Vx in memory. Basically you loop from 0 to X and assign the value of Vi to memory location `I + i`
-```C
+```c
 case 0xFX55:
 	for (uint8_t i = 0; i <= X; i++)
 	{
@@ -554,7 +554,7 @@ I used GLFW and GLAD to handle the graphics, the basic idea behind handling this
 	This function will run once on the main function to initialize the window
 
 	Function will first setup GLFW context version and OpenGL Profile
-	```C
+	```c
 glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -566,7 +566,7 @@ glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	Then I created the window and set the current context to that window and if any of those did fail the function will return false and that will throw an error stoping the while emulator.
 
 	After that I set the viewport initially and then keep it updated whenever the window get resized
-	```C
+	```c
 	// Tell OpenGL size of rendering window
 int fbW, fbH;
 glfwGetFramebufferSize(window, &fbW, &fbH);
@@ -579,7 +579,7 @@ glfwSetFramebufferSizeCallback(window, framebuff_size_callback);
 	Then I setup the shaders using a module that handles reading shaders, complies and links them, and Im too lazy to explain it here so you can check it out in the [OpenGL Book](https://learnopengl.com/book/book_pdf.pdf) chapter 6.6 :).
 
 	Then I initialize the vertices for the texture which contains both position coords and texture coordinates and then setup VBO that stores the vertex data in GPU memory, and VAO which stores how that data is organized and how OpenGL should interpret that data, then setup the texture to use `GL_NEAREST` so that when texture is scale up the pixels will use the nearest pixel instead of smoothly interpolate. I also use `GL_CLAMP_TO_EDGE` to prevent unwanted wrapping at the edges. Then I initialize the `pixel` array and set every pixel in it to black, after that I uploaded the data to the GPU using `glTexImage2D()`
-	```C
+	```c
 glGenVertexArrays(1, &VAO);
 glGenBuffers(1, &VBO);
 
@@ -628,7 +628,7 @@ glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, EM_WIDTH, EM_HIGH, 0, GL_RGBA, GL_UNSIGN
 
 - convertGrphToPx()
 	Function gets the `grphx[]` array as a parameter then it loops on that array and checks if `grphx[] = 1` then set the pixel RGBA to white (255) else if `grphx[i] = 0` then set the pixel to black (0) 
-	```C
+	```c
 void convertGrphToPx(uint8_t g[])
 	{
 	for (int i = 0; i < (EM_WIDTH * EM_HIGH); i++) {
@@ -656,7 +656,7 @@ void convertGrphToPx(uint8_t g[])
 Handling Input is also in graphics.h as GLFW is also responsible for input handling.
 - processInput()
 	Basically this is the only function that will be handling the input so first I set up a way to close the whole game if you pressed on `ESC` key
-	```C
+	```c
 // Close Window on clicking ESC
 if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 {
@@ -674,7 +674,7 @@ if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 | 0xA 0xB 0x0 0xF | Z X C V       |
 	So when you press `Q` on your keyboard the function will get the key set the `key[0x4] = 1`  and when the key is released set `key[0x4] = 0` 
 
-```C
+```c
 // Set Keys on Press
 if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
 {
@@ -705,7 +705,7 @@ For the main function I first checked if there is an argument with the game path
 Then initialize GLFW Window using `initalizeGLFW` function also checking if initializing the window threw any errors. 
 
 Once everything is working as expected I made the emulator loop breaks if the window closes. 
-```C
+```c
 while (!glfwWindowShouldClose(window))
 {
 	// Emulate CHIP-8 Cycles code
